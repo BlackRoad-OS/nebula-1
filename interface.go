@@ -287,15 +287,21 @@ func (f *Interface) listenOut(i int) {
 	ctCache := firewall.NewConntrackCacheTicker(f.conntrackCacheTimeout)
 	lhh := f.lightHouse.NewRequestHandler()
 
-	// Allocate plaintext buffer with virtio header headroom to avoid copies on TUN write
-	plaintext := make([]byte, virtioNetHdrLen+udp.MTU)
+	// Pre-allocate output buffers for batch processing
+	batchSize := li.BatchSize()
+	outs := make([][]byte, batchSize)
+	for idx := range outs {
+		// Allocate full buffer with virtio header space
+		outs[idx] = make([]byte, virtioNetHdrLen, virtioNetHdrLen+udp.MTU)
+	}
 
 	h := &header.H{}
 	fwPacket := &firewall.Packet{}
 	nb := make([]byte, 12)
 
 	li.ListenOut(func(fromUdpAddr netip.AddrPort, payload []byte) {
-		f.readOutsidePackets(ViaSender{UdpAddr: fromUdpAddr}, plaintext[:virtioNetHdrLen], payload, h, fwPacket, lhh, nb, i, ctCache.Get(f.l))
+		// JRW TODO RED ALERT WTF MERGE?!~?!
+		f.readOutsidePackets(ViaSender{UdpAddr: fromUdpAddr}, outs[0], payload, h, fwPacket, lhh, nb, i, ctCache.Get(f.l))
 	})
 }
 
