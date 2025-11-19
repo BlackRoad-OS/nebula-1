@@ -316,7 +316,7 @@ func (t *tun) SupportsMultiqueue() bool {
 	return true
 }
 
-func (t *tun) NewMultiQueueReader() (io.ReadWriteCloser, error) {
+func (t *tun) NewMultiQueueReader() (BatchReadWriter, error) {
 	fd, err := unix.Open("/dev/net/tun", os.O_RDWR, 0)
 	if err != nil {
 		return nil, err
