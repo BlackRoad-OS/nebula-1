@@ -145,7 +145,7 @@ func (f *Interface) readOutsidePackets(via ViaSender, out []byte, packet []byte,
 		}
 
 		//TODO: assert via is not relayed
-		lhf.HandleRequest(via.UdpAddr, hostinfo.vpnAddrs, d, f)
+		lhf.HandleRequest(via.UdpAddr, hostinfo.vpnAddrs, d[virtioNetHdrLen:], f)
 
 		// Fallthrough to the bottom to record incoming traffic
 
@@ -167,7 +167,7 @@ func (f *Interface) readOutsidePackets(via ViaSender, out []byte, packet []byte,
 			// This testRequest might be from TryPromoteBest, so we should roam
 			// to the new IP address before responding
 			f.handleHostRoaming(hostinfo, via)
-			f.send(header.Test, header.TestReply, ci, hostinfo, d, nb, out)
+			f.send(header.Test, header.TestReply, ci, hostinfo, d[virtioNetHdrLen:], nb, out)
 		}
 
 		// Fallthrough to the bottom to record incoming traffic
@@ -210,7 +210,7 @@ func (f *Interface) readOutsidePackets(via ViaSender, out []byte, packet []byte,
 			return
 		}
 
-		f.relayManager.HandleControlMsg(hostinfo, d, f)
+		f.relayManager.HandleControlMsg(hostinfo, d[virtioNetHdrLen:], f)
 
 	default:
 		f.messageMetrics.Rx(h.Type, h.Subtype, 1)
@@ -651,6 +651,7 @@ func (f *Interface) readOutsidePacketsBatch(vias []ViaSender, payloads [][]byte,
 
 		default:
 			// Handle non-Message types using single-packet path
+			// JRW TODO RED ALERT! MERGE WTF?!?!
 			f.readOutsidePackets(via, out[:virtioNetHdrLen], payload, h, fwPacket, lhf, nb, q, localCache)
 		}
 	}
